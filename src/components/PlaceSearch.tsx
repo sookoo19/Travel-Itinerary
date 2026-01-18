@@ -7,15 +7,21 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Spot } from '@/types/trip';
-
-const libraries: ("places")[] = ['places'];
+import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_API_KEY } from '@/lib/googleMaps';
 
 interface PlaceSearchProps {
   /** 場所が選択された時のコールバック */
   onPlaceSelect: (spot: Spot) => void;
+}
+
+interface PlacePrediction {
+  placeId: string;
+  mainText: string;
+  secondaryText?: string;
+  description: string;
 }
 
 /**
@@ -23,33 +29,32 @@ interface PlaceSearchProps {
  */
 export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
   const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  // サービスの参照
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
-  const dummyDivRef = useRef<HTMLDivElement | null>(null);
+
+  const toText = useCallback((value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object' && 'text' in value) {
+      const textValue = (value as { text?: string }).text;
+      return typeof textValue === 'string' ? textValue : '';
+    }
+    return '';
+  }, []);
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries,
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
-
-  // サービスの初期化
-  useEffect(() => {
-    if (isLoaded && !autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-      // PlacesService は DOM 要素が必要なのでダミー div を使用
-      if (dummyDivRef.current) {
-        placesServiceRef.current = new google.maps.places.PlacesService(dummyDivRef.current);
-      }
-    }
-  }, [isLoaded]);
 
   // 検索クエリが変わった時の処理
   const handleSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim() || !autocompleteServiceRef.current) {
+    if (!searchQuery.trim()) {
+      setPredictions([]);
+      return;
+    }
+
+    if (!google.maps.places?.AutocompleteSuggestion) {
+      console.warn('Places API (New) が利用できません。APIの有効化を確認してください。');
       setPredictions([]);
       return;
     }
@@ -57,26 +62,38 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
     setIsSearching(true);
     
     try {
-      autocompleteServiceRef.current.getPlacePredictions(
-        { 
-          input: searchQuery,
-          // 日本を優先
-          componentRestrictions: { country: 'jp' },
-        },
-        (results, status) => {
-          setIsSearching(false);
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            setPredictions(results);
-          } else {
-            setPredictions([]);
-          }
-        }
-      );
+      const response = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: searchQuery,
+        // 日本を優先
+        region: 'JP',
+      });
+
+      const nextPredictions: PlacePrediction[] = response.suggestions
+        .map((suggestion) => suggestion.placePrediction)
+        .filter((prediction): prediction is google.maps.places.PlacePrediction => Boolean(prediction))
+        .map((prediction) => {
+          const structuredFormat = (prediction as unknown as { structuredFormat?: { mainText?: unknown; secondaryText?: unknown } }).structuredFormat;
+          const mainText = toText(structuredFormat?.mainText) || toText((prediction as unknown as { text?: unknown }).text);
+          const secondaryText = toText(structuredFormat?.secondaryText) || undefined;
+          const description = toText((prediction as unknown as { text?: unknown }).text) || mainText;
+
+          return {
+            placeId: prediction.placeId,
+            mainText,
+            secondaryText,
+            description,
+          };
+        })
+        .filter((prediction) => prediction.placeId);
+
+      setPredictions(nextPredictions);
     } catch (error) {
       console.error('検索エラー:', error);
       setIsSearching(false);
       setPredictions([]);
+      return;
     }
+    setIsSearching(false);
   }, []);
 
   // デバウンス処理
@@ -89,29 +106,28 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
   }, [query, handleSearch]);
 
   // 場所を選択した時の処理
-  const handleSelectPlace = (prediction: google.maps.places.AutocompletePrediction) => {
-    if (!placesServiceRef.current) return;
+  const handleSelectPlace = async (prediction: PlacePrediction) => {
+    if (!google.maps.places?.Place) return;
 
-    placesServiceRef.current.getDetails(
-      { 
-        placeId: prediction.place_id,
-        fields: ['name', 'geometry', 'place_id'],
-      },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-          const spot: Spot = {
-            name: place.name || prediction.description,
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-            placeId: place.place_id || prediction.place_id,
-          };
-          onPlaceSelect(spot);
-          // 検索をクリア
-          setQuery('');
-          setPredictions([]);
-        }
+    try {
+      const place = new google.maps.places.Place({ id: prediction.placeId });
+      await place.fetchFields({ fields: ['displayName', 'location', 'id'] });
+
+      if (place.location) {
+        const spot: Spot = {
+          name: place.displayName || prediction.description,
+          lat: place.location.lat(),
+          lng: place.location.lng(),
+          placeId: place.id || prediction.placeId,
+        };
+        onPlaceSelect(spot);
+        // 検索をクリア
+        setQuery('');
+        setPredictions([]);
       }
-    );
+    } catch (error) {
+      console.error('場所詳細取得エラー:', error);
+    }
   };
 
   if (!isLoaded) {
@@ -122,11 +138,17 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
     );
   }
 
+  if (!google.maps.places?.AutocompleteSuggestion) {
+    return (
+      <div className="p-2 text-red-500 text-sm">
+        Places API (New) が有効化されていません。
+        Google Cloud ConsoleでPlaces API (New)を有効化してください。
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
-      {/* PlacesService 用のダミー要素 */}
-      <div ref={dummyDivRef} style={{ display: 'none' }} />
-      
       {/* 検索入力 */}
       <div className="relative">
         <input
@@ -148,15 +170,15 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
         <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {predictions.map((prediction) => (
             <li
-              key={prediction.place_id}
+              key={prediction.placeId}
               onClick={() => handleSelectPlace(prediction)}
               className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
             >
               <div className="text-sm font-medium text-gray-900">
-                {prediction.structured_formatting.main_text}
+                {prediction.mainText}
               </div>
               <div className="text-xs text-gray-500">
-                {prediction.structured_formatting.secondary_text}
+                {prediction.secondaryText}
               </div>
             </li>
           ))}

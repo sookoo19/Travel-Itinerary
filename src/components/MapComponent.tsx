@@ -8,11 +8,9 @@
 'use client';
 
 import { useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { Spot, Hotel } from '@/types/trip';
-
-// Google Maps API で使用するライブラリ
-const libraries: ("places")[] = ['places'];
+import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_MAP_ID } from '@/lib/googleMaps';
 
 // マップのデフォルトスタイル（モバイル向け）
 const mapContainerStyle = {
@@ -33,6 +31,8 @@ const mapOptions: google.maps.MapOptions = {
   mapTypeControl: false,
   streetViewControl: false,
   fullscreenControl: false,
+  // AdvancedMarkerElementを使用するためにMap IDが必要
+  mapId: GOOGLE_MAPS_MAP_ID || undefined,
 };
 
 interface MapComponentProps {
@@ -60,12 +60,14 @@ export default function MapComponent({
 }: MapComponentProps) {
   // Google Maps APIの読み込み
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries,
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // マップインスタンスの参照を保持
   const mapRef = useRef<google.maps.Map | null>(null);
+  const spotMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const hotelMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   
   // 現在のマップ中心座標
   const mapCenter = center || defaultCenter;
@@ -113,6 +115,58 @@ export default function MapComponent({
     }
   }, [spots, hotels]);
 
+  // スポット/宿泊施設マーカーの描画（AdvancedMarkerElement）
+  useEffect(() => {
+    if (!mapRef.current || !google.maps.marker?.AdvancedMarkerElement) return;
+
+    // 既存マーカーをクリア
+    spotMarkersRef.current.forEach(marker => {
+      marker.map = null;
+    });
+    hotelMarkersRef.current.forEach(marker => {
+      marker.map = null;
+    });
+    spotMarkersRef.current = [];
+    hotelMarkersRef.current = [];
+
+    // スポットのマーカー（赤）
+    spots.forEach((spot) => {
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        map: mapRef.current!,
+        position: { lat: spot.lat, lng: spot.lng },
+        title: spot.name,
+      });
+
+      if (onSpotClick) {
+        marker.addListener('gmp-click', () => onSpotClick(spot));
+      }
+
+      spotMarkersRef.current.push(marker);
+    });
+
+    // 宿泊施設のマーカー（青）
+    hotels.forEach((hotel) => {
+      if (!hotel.lat || !hotel.lng) return;
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        map: mapRef.current!,
+        position: { lat: hotel.lat, lng: hotel.lng },
+        title: hotel.name,
+      });
+      hotelMarkersRef.current.push(marker);
+    });
+
+    return () => {
+      spotMarkersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      hotelMarkersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      spotMarkersRef.current = [];
+      hotelMarkersRef.current = [];
+    };
+  }, [spots, hotels, onSpotClick]);
+
   // 読み込みエラー
   if (loadError) {
     return (
@@ -141,34 +195,6 @@ export default function MapComponent({
       onLoad={onLoad}
       onUnmount={onUnmount}
       options={mapOptions}
-    >
-      {/* スポットのマーカー（赤） */}
-      {spots.map((spot, index) => (
-        <Marker
-          key={`spot-${spot.placeId || index}`}
-          position={{ lat: spot.lat, lng: spot.lng }}
-          title={spot.name}
-          onClick={() => onSpotClick?.(spot)}
-          icon={{
-            url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          }}
-        />
-      ))}
-      
-      {/* 宿泊施設のマーカー（青） */}
-      {hotels.map((hotel, index) => {
-        if (!hotel.lat || !hotel.lng) return null;
-        return (
-          <Marker
-            key={`hotel-${index}`}
-            position={{ lat: hotel.lat, lng: hotel.lng }}
-            title={hotel.name}
-            icon={{
-              url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            }}
-          />
-        );
-      })}
-    </GoogleMap>
+    />
   );
 }

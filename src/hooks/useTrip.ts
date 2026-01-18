@@ -38,16 +38,17 @@ export function useTrip() {
     if (!isInitializedRef.current) {
       isInitializedRef.current = true;
       // ハイドレーション完了後、URLから最新の状態を取得
-      // startTransitionを使用してレンダリングの優先度を下げる
       const tripFromUrl = getTripFromUrl();
-      // 同じ参照なら更新しない
-      setTrip(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(tripFromUrl)) {
-          return prev;
-        }
-        return tripFromUrl;
-      });
-      setIsInitialized(true);
+      // setTimeoutで遅延させてカスケードレンダリングを回避
+      setTimeout(() => {
+        setTrip(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(tripFromUrl)) {
+            return prev;
+          }
+          return tripFromUrl;
+        });
+        setIsInitialized(true);
+      }, 0);
     }
   }, []);
 

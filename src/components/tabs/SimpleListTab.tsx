@@ -50,57 +50,65 @@ export default function SimpleListTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold">
-        {icon} {title}
-      </h2>
+      {/* ヘッダー */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
+          <span className="text-2xl">{icon}</span>
+          <span>{title}</span>
+        </h2>
+      </div>
 
       {/* 入力フォーム */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={handleAdd}
-          className="px-4 py-3 bg-blue-500 text-white rounded-lg font-medium active:bg-blue-600"
-        >
-          追加
-        </button>
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-main transition-all"
+          />
+          <button
+            onClick={handleAdd}
+            className="px-5 py-3 bg-main text-white rounded-xl font-medium active:opacity-80 transition-all"
+          >
+            追加
+          </button>
+        </div>
       </div>
 
       {/* リスト表示 */}
       {items.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-8">
-          まだ項目がありません
-        </p>
+        <div className="bg-white rounded-2xl shadow-sm p-8">
+          <p className="text-text-sub text-sm text-center">
+            まだ項目がありません ✨
+          </p>
+        </div>
       ) : (
-        <ul className="space-y-2">
-          {items.map((item, index) => (
-            <li
-              key={index}
-              className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg"
-            >
-              <span className="text-base flex-1 mr-2">{item}</span>
-              <button
-                onClick={() => onRemove(index)}
-                className="text-red-500 text-sm px-2 py-1 shrink-0"
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <ul className="space-y-2">
+            {items.map((item, index) => (
+              <li
+                key={index}
+                className="flex items-center justify-between bg-sub/10 px-4 py-3 rounded-xl border border-sub/20"
               >
-                削除
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* 項目数カウント */}
-      {items.length > 0 && (
-        <p className="text-gray-500 text-sm text-right">
-          合計: {items.length} 件
-        </p>
+                <span className="text-base text-text-main flex-1 mr-2">{item}</span>
+                <button
+                  onClick={() => onRemove(index)}
+                  className="text-warn text-sm px-3 py-1 shrink-0 rounded-lg hover:bg-warn/10 transition-colors"
+                >
+                  削除
+                </button>
+              </li>
+            ))}
+          </ul>
+          
+          {/* 項目数カウント */}
+          <p className="text-text-sub text-sm text-right mt-4 pt-3 border-t border-gray-100">
+            合計: <span className="font-medium text-main">{items.length}</span> 件
+          </p>
+        </div>
       )}
     </div>
   );

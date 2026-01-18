@@ -53,11 +53,11 @@ export default function Header({ title, onTitleChange, trip }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 bg-white border-b border-gray-200 z-40">
-      <div className="max-w-[375px] mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+    <header className="sticky top-0 bg-white/95 backdrop-blur-sm shadow-sm z-40">
+      <div className="max-w-[375px] mx-auto px-4 py-4">
+        <div className="flex items-center justify-between gap-3">
           {/* タイトル部分 */}
-          <div className="flex-1 mr-3">
+          <div className="flex-1 min-w-0">
             {isEditing ? (
               <div className="flex gap-2">
                 <input
@@ -65,12 +65,12 @@ export default function Header({ title, onTitleChange, trip }: HeaderProps) {
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-lg font-bold"
+                  className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-lg font-bold focus:ring-2 focus:ring-indigo-200 focus:outline-none transition-all duration-150"
                   autoFocus
                 />
                 <button
                   onClick={handleSave}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+                  className="px-4 py-2 bg-[#A5B4FC] text-white rounded-full text-sm font-medium transition-all duration-150 hover:opacity-90"
                 >
                   保存
                 </button>
@@ -78,12 +78,12 @@ export default function Header({ title, onTitleChange, trip }: HeaderProps) {
             ) : (
               <button
                 onClick={handleStartEdit}
-                className="text-left w-full"
+                className="text-left w-full transition-all duration-150"
               >
-                <h1 className="text-xl font-bold text-gray-800 truncate">
+                <h1 className="text-xl font-bold text-slate-700 truncate">
                   ✈️ {title}
                 </h1>
-                <p className="text-xs text-gray-400">タップして編集</p>
+                <p className="text-xs text-slate-400">タップして編集</p>
               </button>
             )}
           </div>
@@ -91,7 +91,7 @@ export default function Header({ title, onTitleChange, trip }: HeaderProps) {
           {/* 共有ボタン */}
           <button
             onClick={handleShare}
-            className="shrink-0 px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium active:bg-green-600 relative"
+            className="shrink-0 px-4 py-2 bg-[#6EE7B7] text-slate-700 rounded-full text-sm font-medium transition-all duration-150 hover:opacity-90"
           >
             {showCopied ? '✓ コピー済み' : '🔗 共有'}
           </button>

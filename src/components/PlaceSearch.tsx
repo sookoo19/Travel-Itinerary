@@ -95,7 +95,7 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
       return;
     }
     setIsSearching(false);
-  }, []);
+  }, [toText]);
 
   // デバウンス処理
   useEffect(() => {
@@ -133,16 +133,16 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
 
   if (!isLoaded) {
     return (
-      <div className="p-2 text-gray-500 text-sm">
-        検索機能を読み込み中...
+      <div className="p-3 text-text-sub text-sm bg-main/10 rounded-xl">
+        ✨ 検索機能を読み込み中...
       </div>
     );
   }
 
   if (!google.maps.places?.AutocompleteSuggestion) {
     return (
-      <div className="p-2 text-red-500 text-sm">
-        Places API (New) が有効化されていません。
+      <div className="p-3 text-warn text-sm bg-warn/10 rounded-xl">
+        ⚠️ Places API (New) が有効化されていません。
         Google Cloud ConsoleでPlaces API (New)を有効化してください。
       </div>
     );
@@ -158,29 +158,29 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-          placeholder="場所を検索..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="🔍 場所を検索..."
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-main transition-all bg-white"
         />
         {isSearching && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+            <div className="animate-spin h-5 w-5 border-2 border-main border-t-transparent rounded-full" />
           </div>
         )}
       </div>
 
       {/* 検索結果のドロップダウン（フォーカス時のみ表示） */}
       {isFocused && predictions.length > 0 && (
-        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute z-10 w-full mt-2 bg-white border border-main/20 rounded-xl shadow-sm max-h-60 overflow-y-auto">
           {predictions.map((prediction) => (
             <li
               key={prediction.placeId}
               onClick={() => handleSelectPlace(prediction)}
-              className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              className="px-4 py-3 hover:bg-sub/10 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
             >
-              <div className="text-sm font-medium text-gray-900">
-                {prediction.mainText}
+              <div className="text-sm font-medium text-text-main">
+                📍 {prediction.mainText}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-text-sub mt-0.5">
                 {prediction.secondaryText}
               </div>
             </li>

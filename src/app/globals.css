@@ -3,13 +3,22 @@
 /**
  * 旅のしおりアプリ - グローバルスタイル
  * 
- * モバイル専用デザイン（max-width: 375px想定）
+ * デザインコンセプト: 「旅前のワクワク感を高める、モダンでポップなデジタル旅のしおり」
+ * モバイル専用デザイン（375px想定）
  * ダークモードは無効化
  */
 
 :root {
-  --background: #f9fafb;
-  --foreground: #171717;
+  /* ベースカラー */
+  --background: #F8FAFC;
+  --foreground: #334155;
+  --text-sub: #64748B;
+  
+  /* パステルアクセントカラー */
+  --color-main: #A5B4FC;
+  --color-sub: #6EE7B7;
+  --color-accent: #FDBA74;
+  --color-warning: #FCA5A5;
 }
 
 @theme inline {
@@ -22,8 +31,8 @@
 /* ダークモード無効化 - ライトモード固定 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #f9fafb;
-    --foreground: #171717;
+    --background: #F8FAFC;
+    --foreground: #334155;
   }
 }
 
@@ -42,6 +51,7 @@ button,
 a, 
 input[type="submit"] {
   min-height: 44px;
+  transition: all 150ms;
 }
 
 /* 入力フォームのスタイル統一 */

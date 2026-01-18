@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/**
+ * 旅のしおりアプリ - グローバルスタイル
+ * 
+ * モバイル専用デザイン（max-width: 375px想定）
+ * ダークモードは無効化
+ */
+
+:root {
+  --background: #f9fafb;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ダークモード無効化 - ライトモード固定 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #f9fafb;
+    --foreground: #171717;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* タップハイライト無効化 */
+  -webkit-tap-highlight-color: transparent;
+  /* スクロールを滑らかに */
+  scroll-behavior: smooth;
+}
+
+/* タップしやすいサイズを確保 */
+button, 
+a, 
+input[type="submit"] {
+  min-height: 44px;
+}
+
+/* 入力フォームのスタイル統一 */
+input, 
+textarea {
+  font-size: 16px; /* iOSのズーム防止 */
+}
+
+/* 印刷用スタイル */
+@media print {
+  body {
+    background: white;
+  }
+  
+  /* タブナビゲーションを非表示 */
+  nav {
+    display: none !important;
+  }
+  
+  /* ヘッダーを非表示 */
+  header {
+    display: none !important;
+  }
+  
+  /* メインコンテンツのパディング調整 */
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}

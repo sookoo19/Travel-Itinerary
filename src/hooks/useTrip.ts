@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trip, Spot, Hotel, Emergency, createEmptyTrip } from '@/types/trip';
+import { Trip, Spot, Hotel, Emergency, DaySchedule, ScheduleItem, TransportType, createEmptyTrip, generateId } from '@/types/trip';
 import { getTripFromUrl, updateUrlWithTrip } from '@/utils/urlCodec';
 
 /**
@@ -170,6 +170,99 @@ export function useTrip() {
     }));
   }, []);
 
+  // === スケジュール（日程管理） ===
+  
+  // 日程を追加
+  const addDaySchedule = useCallback((date: string) => {
+    setTrip(prev => {
+      // 既に同じ日付があれば追加しない
+      if (prev.schedule.some(s => s.date === date)) {
+        return prev;
+      }
+      const newSchedule: DaySchedule = {
+        id: generateId(),
+        date,
+        items: [],
+      };
+      return {
+        ...prev,
+        schedule: [...prev.schedule, newSchedule].sort((a, b) => a.date.localeCompare(b.date)),
+      };
+    });
+  }, []);
+
+  // 日程を削除
+  const removeDaySchedule = useCallback((dayId: string) => {
+    setTrip(prev => ({
+      ...prev,
+      schedule: prev.schedule.filter(s => s.id !== dayId),
+    }));
+  }, []);
+
+  // スケジュールアイテムを追加
+  const addScheduleItem = useCallback((dayId: string, item: Omit<ScheduleItem, 'id'>) => {
+    setTrip(prev => ({
+      ...prev,
+      schedule: prev.schedule.map(day => {
+        if (day.id !== dayId) return day;
+        const newItem: ScheduleItem = {
+          ...item,
+          id: generateId(),
+        };
+        return {
+          ...day,
+          items: [...day.items, newItem].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')),
+        };
+      }),
+    }));
+  }, []);
+
+  // スケジュールアイテムを更新
+  const updateScheduleItem = useCallback((dayId: string, itemId: string, updates: Partial<ScheduleItem>) => {
+    setTrip(prev => ({
+      ...prev,
+      schedule: prev.schedule.map(day => {
+        if (day.id !== dayId) return day;
+        return {
+          ...day,
+          items: day.items
+            .map(item => item.id === itemId ? { ...item, ...updates } : item)
+            .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')),
+        };
+      }),
+    }));
+  }, []);
+
+  // スケジュールアイテムを削除
+  const removeScheduleItem = useCallback((dayId: string, itemId: string) => {
+    setTrip(prev => ({
+      ...prev,
+      schedule: prev.schedule.map(day => {
+        if (day.id !== dayId) return day;
+        return {
+          ...day,
+          items: day.items.filter(item => item.id !== itemId),
+        };
+      }),
+    }));
+  }, []);
+
+  // 移動手段を更新
+  const updateTransportToNext = useCallback((dayId: string, itemId: string, transport: TransportType | undefined) => {
+    setTrip(prev => ({
+      ...prev,
+      schedule: prev.schedule.map(day => {
+        if (day.id !== dayId) return day;
+        return {
+          ...day,
+          items: day.items.map(item => 
+            item.id === itemId ? { ...item, transportToNext: transport } : item
+          ),
+        };
+      }),
+    }));
+  }, []);
+
   return {
     trip,
     isInitialized,
@@ -195,5 +288,12 @@ export function useTrip() {
     addEmergency,
     updateEmergency,
     removeEmergency,
+    // スケジュール（日程管理）
+    addDaySchedule,
+    removeDaySchedule,
+    addScheduleItem,
+    updateScheduleItem,
+    removeScheduleItem,
+    updateTransportToNext,
   };
 }

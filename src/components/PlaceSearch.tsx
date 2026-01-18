@@ -31,6 +31,7 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const toText = useCallback((value: unknown): string => {
     if (typeof value === 'string') return value;
@@ -121,8 +122,8 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
           placeId: place.id || prediction.placeId,
         };
         onPlaceSelect(spot);
-        // 検索をクリア
-        setQuery('');
+        // 選択した場所名を入力欄に表示
+        setQuery(spot.name);
         setPredictions([]);
       }
     } catch (error) {
@@ -155,6 +156,8 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           placeholder="場所を検索..."
           className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -165,8 +168,8 @@ export default function PlaceSearch({ onPlaceSelect }: PlaceSearchProps) {
         )}
       </div>
 
-      {/* 検索結果のドロップダウン */}
-      {predictions.length > 0 && (
+      {/* 検索結果のドロップダウン（フォーカス時のみ表示） */}
+      {isFocused && predictions.length > 0 && (
         <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {predictions.map((prediction) => (
             <li

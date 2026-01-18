@@ -26,8 +26,6 @@ export default function TripApp() {
     updateTitle,
     addDate,
     removeDate,
-    addSpot,
-    removeSpot,
     addTodo,
     removeTodo,
     addItem,
@@ -38,6 +36,13 @@ export default function TripApp() {
     addEmergency,
     updateEmergency,
     removeEmergency,
+    // スケジュール管理
+    addDaySchedule,
+    removeDaySchedule,
+    addScheduleItem,
+    updateScheduleItem,
+    removeScheduleItem,
+    updateTransportToNext,
   } = useTrip();
 
   // 現在のタブ
@@ -65,11 +70,15 @@ export default function TripApp() {
         return (
           <ScheduleTab
             dates={trip.dates}
-            spots={trip.spots}
+            schedule={trip.schedule}
             onAddDate={addDate}
             onRemoveDate={removeDate}
-            onAddSpot={addSpot}
-            onRemoveSpot={removeSpot}
+            onAddDaySchedule={addDaySchedule}
+            onRemoveDaySchedule={removeDaySchedule}
+            onAddScheduleItem={addScheduleItem}
+            onUpdateScheduleItem={updateScheduleItem}
+            onRemoveScheduleItem={removeScheduleItem}
+            onUpdateTransport={updateTransportToNext}
           />
         );
       
